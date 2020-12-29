@@ -10,16 +10,11 @@
 #error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
 #endif
 
-// Note this is classic bluetooth.
-// TODO: switch to BLE
 BluetoothSerial SerialBT;
 
-int SerialBaudRate = 115200;
-String BTDeviceName = "Sherman M4";
-
 void setup() {
-  Serial.begin(SerialBaudRate);
-  SerialBT.begin(DeviceName); //Bluetooth device name
+  Serial.begin(115200);
+  SerialBT.begin("ESP32test"); //Bluetooth device name
   Serial.println("The device started, now you can pair it with bluetooth!");
 }
 
