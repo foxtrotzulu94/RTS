@@ -1,7 +1,7 @@
 // RTS Device Constants
 const int RTS_BAUD_RATE = 115200;
 const char* RTS_BT_NAME = "ShermanToyTank";
-const int RTS_PWM_FREQ  = 5000; // 5KHz
+const int RTS_PWM_FREQ  = 50000; // 50KHz
 const int RTS_PWM_RES   = 8;    // 8-bit resolution, 0 to 255
 const int RTS_TIME_DIV  = 80;
 
