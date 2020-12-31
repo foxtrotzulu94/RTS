@@ -94,17 +94,17 @@ void HandleMessage(const char cmd){
     break;
 
   case 'L':
-    ledcWrite(RIGHT_MOTOR_CH1, 255);
-    ledcWrite(RIGHT_MOTOR_CH2, 250);
-    ledcWrite(LEFT_MOTOR_CH1, 250);
-    ledcWrite(LEFT_MOTOR_CH2, 255);
+    ledcWrite(RIGHT_MOTOR_CH1, 0);
+    ledcWrite(RIGHT_MOTOR_CH2, 128);
+    ledcWrite(LEFT_MOTOR_CH1, 64);
+    ledcWrite(LEFT_MOTOR_CH2, 0);
     break;
 
   case 'R':
-    ledcWrite(RIGHT_MOTOR_CH1, 250);
-    ledcWrite(RIGHT_MOTOR_CH2, 255);
-    ledcWrite(LEFT_MOTOR_CH1, 255);
-    ledcWrite(LEFT_MOTOR_CH2, 250);
+    ledcWrite(RIGHT_MOTOR_CH1, 64);
+    ledcWrite(RIGHT_MOTOR_CH2, 0);
+    ledcWrite(LEFT_MOTOR_CH1, 0);
+    ledcWrite(LEFT_MOTOR_CH2, 128);
     break;
 
   case 'S':

@@ -1,7 +1,7 @@
 // RTS Device Constants
 const int RTS_BAUD_RATE = 115200;
 const char* RTS_BT_NAME = "ShermanToyTank";
-const int RTS_PWM_FREQ  = 50000; // 50KHz
+const int RTS_PWM_FREQ  = 50; // 50Hz
 const int RTS_PWM_RES   = 8;    // 8-bit resolution, 0 to 255
 const int RTS_TIME_DIV  = 80;
 
@@ -20,9 +20,9 @@ const uint8_t TURRET_CH = 5;
 // NOTE: On our dev board, pins 35, 34, 39, 36 seem busted.
 const uint8_t BOOT_BUTTON = 0;
 const uint8_t TEST_PWM_PIN = 33;
-const uint8_t DRV_FAULT_IN_PIN = 26;
-const uint8_t RIGHT_MOTOR_PWN_PIN1 = 27; //AIN1
-const uint8_t RIGHT_MOTOR_PWN_PIN2 = 14; //AIN2
-const uint8_t LEFT_MOTOR_PWN_PIN1 = 12;  //BIN1
-const uint8_t LEFT_MOTOR_PWN_PIN2 = 13;  //BIN2
-const uint8_t TURRET_PWN_PIN = 25; // Currently unused...
+const uint8_t DRV_FAULT_IN_PIN = 14;     // Unused, need pull up resistor
+const uint8_t RIGHT_MOTOR_PWN_PIN1 = 27; // AIN1
+const uint8_t RIGHT_MOTOR_PWN_PIN2 = 26; // AIN2
+const uint8_t LEFT_MOTOR_PWN_PIN1 = 12;  // BIN1
+const uint8_t LEFT_MOTOR_PWN_PIN2 = 13;  // BIN2
+const uint8_t TURRET_PWN_PIN = 25;       // Currently unused...
