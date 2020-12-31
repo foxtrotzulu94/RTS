@@ -1,8 +1,13 @@
+#ifndef __RTS_CONSTS__
+#define __RTS_CONSTS__
+
+#include <stdint.h>
+
 // RTS Device Constants
 const int RTS_BAUD_RATE = 115200;
-const char* RTS_BT_NAME = "ShermanToyTank";
+static const char* RTS_BT_NAME = "ShermanToyTank";
 const int RTS_PWM_FREQ  = 50; // 50Hz
-const int RTS_PWM_RES   = 8;    // 8-bit resolution, 0 to 255
+const int RTS_PWM_RES   = 8;  // 8-bit resolution, 0 to 255
 const int RTS_TIME_DIV  = 80;
 
 const int RTS_WATCHDOG_TIMER = 0;
@@ -26,3 +31,5 @@ const uint8_t RIGHT_MOTOR_PWN_PIN2 = 26; // AIN2
 const uint8_t LEFT_MOTOR_PWN_PIN1 = 12;  // BIN1
 const uint8_t LEFT_MOTOR_PWN_PIN2 = 13;  // BIN2
 const uint8_t TURRET_PWN_PIN = 25;       // Currently unused...
+
+#endif

@@ -1,14 +1,11 @@
 #include <Arduino.h>
 
-#include "BluetoothSerial.h"
 #include "constants.h"
+#include "comms.h"
 
 #if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
 #error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
 #endif
-
-// Classic Bluetooth (not BLE)
-BluetoothSerial SerialBT;
 
 hw_timer_t * timer = NULL;
 
@@ -54,115 +51,6 @@ void setup() {
   Serial.println("Device Ready");
 }
 
-static char LAST_CMD = 'X';
-const int MAX = 255;
-
-static int stepRMCH1 = 0;
-static int stepRMCH2 = 0;
-static int stepLMCH1 = 0;
-static int stepLMCH2 = 0;
-static int valRMCH1 = 0;
-static int valRMCH2 = 0;
-static int valLMCH1 = 0;
-static int valLMCH2 = 0;
-
-void HandleMessage(const char cmd){
-  // Single char message (for now)
-  switch (cmd)
-  {
-  case 'B':
-    ledcWrite(RIGHT_MOTOR_CH1, 128);
-    ledcWrite(RIGHT_MOTOR_CH2, 0);
-    ledcWrite(LEFT_MOTOR_CH1, 128);
-    ledcWrite(LEFT_MOTOR_CH2, 0);
-    stepRMCH1 = 1;
-    stepRMCH2 = 0;
-    stepLMCH1 = 1;
-    stepLMCH2 = 0;
-
-    valRMCH1 = 128;
-    valRMCH2 = 0;
-    valLMCH1 = 128;
-    valLMCH2 = 0;
-    break;
-
-  case 'F': // Forward
-    ledcWrite(RIGHT_MOTOR_CH1, 0);
-    ledcWrite(RIGHT_MOTOR_CH2, 255);
-    ledcWrite(LEFT_MOTOR_CH1, 0);
-    ledcWrite(LEFT_MOTOR_CH2, 255);
-    break;
-
-  case 'L':
-    ledcWrite(RIGHT_MOTOR_CH1, 0);
-    ledcWrite(RIGHT_MOTOR_CH2, 128);
-    ledcWrite(LEFT_MOTOR_CH1, 64);
-    ledcWrite(LEFT_MOTOR_CH2, 0);
-    break;
-
-  case 'R':
-    ledcWrite(RIGHT_MOTOR_CH1, 64);
-    ledcWrite(RIGHT_MOTOR_CH2, 0);
-    ledcWrite(LEFT_MOTOR_CH1, 0);
-    ledcWrite(LEFT_MOTOR_CH2, 128);
-    break;
-
-  case 'S':
-    ledcWrite(RIGHT_MOTOR_CH1, 0);
-    ledcWrite(RIGHT_MOTOR_CH2, 0);
-    ledcWrite(LEFT_MOTOR_CH1, 0);
-    ledcWrite(LEFT_MOTOR_CH2, 0);
-    break;
-    
-  case 'O':
-    ledcWrite(RIGHT_MOTOR_CH1, 255);
-    ledcWrite(RIGHT_MOTOR_CH2, 255);
-    ledcWrite(LEFT_MOTOR_CH1, 255);
-    ledcWrite(LEFT_MOTOR_CH2, 255);
-    break;
-
-  case 'T':
-    SerialBT.println("Testing underway");
-    ledcWrite(RIGHT_MOTOR_CH1, 0);
-    ledcWrite(RIGHT_MOTOR_CH2, 0);
-    ledcWrite(LEFT_MOTOR_CH1, 0);
-    ledcWrite(LEFT_MOTOR_CH2, 0);
-
-    for (int i=0; i<=255; ++i){
-      SerialBT.printf("Duty = %i\n", (100 * i) / 255);
-      ledcWrite(RIGHT_MOTOR_CH2, i);
-      ledcWrite(LEFT_MOTOR_CH2, i);
-      delay(50);
-    }
-    SerialBT.println("TEST complete");
-    ledcWrite(LEFT_MOTOR_CH2, 0);
-    ledcWrite(RIGHT_MOTOR_CH2, 0);
-    
-    break;
-
-  default:
-    break;
-  }
-
-  LAST_CMD = cmd;
-}
-
-static unsigned long nextUpdate = 0;
-void updateCMD(){
-  if(LAST_CMD != 'B' || nextUpdate > millis()){
-    return;
-  }
-
-  valRMCH1 = valRMCH1 >= MAX? MAX : valRMCH1 + 1;
-  valLMCH1 = valLMCH1 >= MAX? MAX : valLMCH1 + 1;
-  ledcWrite(RIGHT_MOTOR_CH1, valRMCH1);
-  ledcWrite(RIGHT_MOTOR_CH2, 0);
-  ledcWrite(LEFT_MOTOR_CH1, valLMCH1);
-  ledcWrite(LEFT_MOTOR_CH2, 0);
-
-  nextUpdate = millis() + 50;
-}
-
 // Our DRV8833 has a fault pin. It'll be driven low in the event of an actual fault
 static int DRV_FAULT = -1;
 
@@ -180,5 +68,4 @@ void loop() {
     // Do the thing
     HandleMessage(SerialBT.read());
   }
-  // updateCMD();
 }
