@@ -2,6 +2,11 @@ package com.foxtrotzulu94.rtscontrol
 
 import androidx.appcompat.app.AppCompatActivity
 import android.annotation.SuppressLint
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothServerSocket
+import android.bluetooth.BluetoothSocket
+import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.util.Log
@@ -10,6 +15,9 @@ import android.view.View
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
+import java.io.IOException
+import java.lang.Exception
+import java.util.*
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
@@ -28,11 +36,17 @@ class FullscreenActivity : AppCompatActivity() {
     private var isPressed : Boolean = false
     private var isCommsThreadRunning : Boolean = false
 
+    private val bluetoothAdapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
+    private var bluetoothSocket : BluetoothSocket? = null
     private val logBuffer = StringBuffer()
 
+    private val commsBTSPP = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
+    private val commsInitHandler = Handler()
+    private val commsTargetName = "ShermanToyTank"
     private val commsHeader = "RTS"
     private var commsMsg : String? = null
-    private val commsThread = Thread(Runnable {
+
+    private val commsSenderThread = Thread(Runnable {
         // TODO: ensure connection active
 
         while(isCommsThreadRunning){
@@ -43,6 +57,10 @@ class FullscreenActivity : AppCompatActivity() {
             // Don't starve
             Thread.sleep(50)
         }
+    })
+
+    private val commsReceiverThread = Thread(Runnable {
+        // TODO: ensure connection active
     })
 
     @SuppressLint("ClickableViewAccessibility")
@@ -71,12 +89,16 @@ class FullscreenActivity : AppCompatActivity() {
 
         // Start the comms thread
         this.isCommsThreadRunning = true
-        commsThread.start()
+        commsReceiverThread.start()
 
         // Title bar? Not needed
         supportActionBar?.hide()
+    }
 
-        onScreenLog("System ready")
+    override fun onStart() {
+        super.onStart()
+        commsInitHandler.postDelayed(Runnable { this.setupBluetooth() }, 3000)
+        onScreenLog("System started")
     }
 
     override fun onPostCreate(savedInstanceState: Bundle?) {
@@ -85,7 +107,41 @@ class FullscreenActivity : AppCompatActivity() {
 
     private fun onScreenLog(msg : String){
         logBuffer.append(msg)
+        logBuffer.append('\n')
         logWindow.text = logBuffer.toString()
+    }
+
+    private fun setupBluetooth(){
+        onScreenLog("Starting bluetooth connection")
+
+        // Check that we can use bluetooth
+        if (bluetoothAdapter == null) {
+            onScreenLog("Your system does not seem to support bluetooth!")
+        }
+
+        // Request they turn it on
+        if (bluetoothAdapter?.isEnabled == false) {
+            onScreenLog("Requesting to turn on bluetooth")
+            val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT)
+        }
+
+        // Check if 'ShermanToyTank' is around
+        val pairedDevices: Set<BluetoothDevice>? = bluetoothAdapter?.bondedDevices
+        val toyTank = pairedDevices?.find { device -> device.name == commsTargetName }
+        if (toyTank == null){
+            onScreenLog("'$commsTargetName' was not found among paired bluetooth devices")
+        }
+
+        bluetoothSocket = toyTank?.createRfcommSocketToServiceRecord(commsBTSPP)
+        try{
+            bluetoothSocket?.connect();
+            onScreenLog("Connected to '$commsTargetName'")
+        }
+        catch (e: Exception) {
+            onScreenLog("Failed to connect '$commsTargetName")
+            onScreenLog(e.message!!)
+        }
     }
 
     private fun updateMoveDirectionMessage(directionCharacter: Char){
@@ -116,6 +172,6 @@ class FullscreenActivity : AppCompatActivity() {
     }
 
     companion object {
-
+        const val REQUEST_ENABLE_BT = 1
     }
 }
