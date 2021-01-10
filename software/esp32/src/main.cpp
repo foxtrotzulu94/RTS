@@ -35,6 +35,7 @@ void setupPWM(){
 void setup() {
   Serial.begin(RTS_BAUD_RATE);
   SerialBT.begin(RTS_BT_NAME);
+  SerialBT.register_callback(&BluetoothCallback);
   Serial.println("Device serial started");
 
   // Motor controller pin in
@@ -64,8 +65,8 @@ void checkDRVFault(){
 }
 
 void loop() {
-  if (SerialBT.available()) {
-    // Do the thing
-    HandleMessage(SerialBT.read());
-  }
+  // if (SerialBT.available()) {
+  //   // Do the thing
+  //   HandleMessage(SerialBT.read());
+  // }
 }
