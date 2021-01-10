@@ -1,6 +1,7 @@
 #ifndef __RTS_CONSTS__
 #define __RTS_CONSTS__
 
+#include <Arduino.h>
 #include <stdint.h>
 
 // RTS Device Constants

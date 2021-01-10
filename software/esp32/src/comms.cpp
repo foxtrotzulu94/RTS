@@ -1,39 +1,51 @@
 #include "constants.h"
 #include "comms.h"
+#include "motors.h"
 
-void HandleMessage(const char cmd)
+void RouteMessage(const char* cmd){
+    std::string action = std::string(cmd, 4);
+    if (action == "MOVD"){
+        // Simple mapping, nothing fancy
+        // Note that doing something like `RTSMove dir = (RTSMove)cmd[4]`
+        // Results in undefined behaviour if cmd[4] contains an unmapped value.
+        switch (cmd[4])
+        {
+        case 'F':
+            MoveDirection(RTSMove::FORWARD);
+            break;
+        case 'B':
+            MoveDirection(RTSMove::BACKWARD);
+            break;
+        case 'L':
+            MoveDirection(RTSMove::LEFT);
+            break;
+        case 'R':
+            MoveDirection(RTSMove::RIGHT);
+            break;
+        
+        default:
+            SerialBT.printf("Unrecognized direction %s for 'RTSMOVD'\n",cmd[4]);
+            break;
+        }
+    }
+    else if (action == "STOP"){
+        StopMotors();
+    }
+    else if (action == "HOLA"){
+        SerialBT.println("ACK");
+    }
+}
+
+void HandleMessage(const char* cmd)
 {
-    // Single char message (for now)
-    switch (cmd)
+    if(cmd[0] == 'R' && cmd[1] == 'T' && cmd[2] == 'S'){
+        // Remove the header and send it down
+        return RouteMessage(&cmd[3]);
+    }
+
+    // Single char message testing
+    switch (cmd[0])
     {
-    case 'B':
-        ledcWrite(RIGHT_MOTOR_CH1, 128);
-        ledcWrite(RIGHT_MOTOR_CH2, 0);
-        ledcWrite(LEFT_MOTOR_CH1, 128);
-        ledcWrite(LEFT_MOTOR_CH2, 0);
-        break;
-
-    case 'F': // Forward
-        ledcWrite(RIGHT_MOTOR_CH1, 0);
-        ledcWrite(RIGHT_MOTOR_CH2, 255);
-        ledcWrite(LEFT_MOTOR_CH1, 0);
-        ledcWrite(LEFT_MOTOR_CH2, 255);
-        break;
-
-    case 'L':
-        ledcWrite(RIGHT_MOTOR_CH1, 0);
-        ledcWrite(RIGHT_MOTOR_CH2, 128);
-        ledcWrite(LEFT_MOTOR_CH1, 128);
-        ledcWrite(LEFT_MOTOR_CH2, 0);
-        break;
-
-    case 'R':
-        ledcWrite(RIGHT_MOTOR_CH1, 128);
-        ledcWrite(RIGHT_MOTOR_CH2, 0);
-        ledcWrite(LEFT_MOTOR_CH1, 0);
-        ledcWrite(LEFT_MOTOR_CH2, 128);
-        break;
-
     case 'S':
         ledcWrite(RIGHT_MOTOR_CH1, 0);
         ledcWrite(RIGHT_MOTOR_CH2, 0);
@@ -75,10 +87,6 @@ void HandleMessage(const char cmd)
     default:
         break;
     }
-
-    // Copy last command
-    LAST_COMMAND[0] = cmd;
-    strncpy(&LAST_COMMAND[1], "", 3);
 }
 
 const int BUFF_SIZE = 600;
@@ -94,25 +102,21 @@ void BluetoothCallback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param){
         }
     }
 
-    // By this point, SerialBT should have the bytes stored in the RTOS queue
-    auto start = millis();
+    // auto start = millis();
     int size = std::min((int)param->data_ind.len, BUFF_SIZE);
     // TODO: could replace with strncpy?
     for (int i = 0; i < size; i++){
         buff[i] = *((char*)(param->data_ind.data + i));
     }
-    auto end = millis();
+    // auto end = millis();
     if(BUFF_SIZE - size > 0){
         buff[size] = '\0';
     }
 
-    // char cmd[5];
-    // cmd[4] = '\0';
-    // SerialBT.readBytes(cmd, 4);
     // Take the first byte and handle the message
-    // HandleMessage(buff[0]);
-    SerialBT.printf("Msg: %s - time: %lu ms\n", buff, end-start);
+    HandleMessage(buff);
+    // SerialBT.printf("Msg: %s - time: %lu ms\n", buff, end-start);
 
-    // Flush all comms down the toilet
+    // Flush all comms so we don't fill the RTOS buffer
     SerialBT.flush();
 }
