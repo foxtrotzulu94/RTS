@@ -45,38 +45,6 @@ class FullscreenActivity : AppCompatActivity() {
         }
     })
 
-    private fun onScreenLog(msg : String){
-        logBuffer.append(msg)
-        logWindow.text = logBuffer.toString()
-    }
-
-    private fun updateMoveDirectionMessage(directionCharacter: Char){
-        commsMsg = commsHeader + "MOVD" + directionCharacter
-    }
-
-    private fun moveButtonOnTouchListener(v: View, event: MotionEvent) : Boolean{
-        when (event?.action) {
-            MotionEvent.ACTION_DOWN -> {
-                isPressed = true
-                val button = v as Button
-                if (button.text == "STOP"){
-                    commsMsg = "RTSSTOP"
-                    isPressed = false
-                }
-                else {
-                    updateMoveDirectionMessage(button.text[0])
-                }
-            }
-
-            MotionEvent.ACTION_UP -> {
-                isPressed = false
-                commsMsg = null
-            }
-        }
-
-        return v?.onTouchEvent(event) ?: true
-    }
-
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -113,6 +81,38 @@ class FullscreenActivity : AppCompatActivity() {
 
     override fun onPostCreate(savedInstanceState: Bundle?) {
         super.onPostCreate(savedInstanceState)
+    }
+
+    private fun onScreenLog(msg : String){
+        logBuffer.append(msg)
+        logWindow.text = logBuffer.toString()
+    }
+
+    private fun updateMoveDirectionMessage(directionCharacter: Char){
+        commsMsg = commsHeader + "MOVD" + directionCharacter
+    }
+
+    private fun moveButtonOnTouchListener(v: View, event: MotionEvent) : Boolean{
+        when (event?.action) {
+            MotionEvent.ACTION_DOWN -> {
+                isPressed = true
+                val button = v as Button
+                if (button.text == "STOP"){
+                    commsMsg = "RTSSTOP"
+                    isPressed = false
+                }
+                else {
+                    updateMoveDirectionMessage(button.text[0])
+                }
+            }
+
+            MotionEvent.ACTION_UP -> {
+                isPressed = false
+                commsMsg = null
+            }
+        }
+
+        return v?.onTouchEvent(event) ?: true
     }
 
     companion object {
