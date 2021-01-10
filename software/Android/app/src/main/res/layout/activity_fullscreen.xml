@@ -87,7 +87,7 @@
                     android:id="@+id/btn_rev"
                     android:layout_width="wrap_content"
                     android:layout_height="64dp"
-                    android:text="REV" />
+                    android:text="BWD" />
             </TableRow>
 
         </TableLayout>
