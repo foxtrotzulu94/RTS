@@ -1,23 +1,23 @@
 package com.foxtrotzulu94.rtscontrol
 
-import androidx.appcompat.app.AppCompatActivity
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
-import android.bluetooth.BluetoothServerSocket
 import android.bluetooth.BluetoothSocket
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
+import android.system.Os.socket
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
-import java.io.IOException
-import java.lang.Exception
+import androidx.appcompat.app.AppCompatActivity
+import java.nio.charset.Charset
 import java.util.*
+
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
@@ -47,11 +47,27 @@ class FullscreenActivity : AppCompatActivity() {
     private var commsMsg : String? = null
 
     private val commsSenderThread = Thread(Runnable {
-        // TODO: ensure connection active
+        while(bluetoothSocket == null) { Thread.sleep(5000) }
+        val socket = bluetoothSocket!!
 
-        while(isCommsThreadRunning){
+        while (isCommsThreadRunning){
             if (isPressed){
                 Log.d("RTS", "Send command '$commsMsg'")
+                // TODO: verify
+                try{
+                    socket.outputStream.write(commsMsg?.toByteArray())
+                    socket.outputStream.write('\r'.toInt())
+                    socket.outputStream.write('\n'.toInt())
+                }
+                catch (e : Exception){
+                    onScreenLog("An exception occurred sending messages")
+                }
+
+                // TODO: do better message handling
+                // Stop is probably not the only message we want to send once...
+                if (commsMsg?.endsWith("STOP") == true){
+                    isPressed = false
+                }
             }
 
             // Don't starve
@@ -60,7 +76,28 @@ class FullscreenActivity : AppCompatActivity() {
     })
 
     private val commsReceiverThread = Thread(Runnable {
-        // TODO: ensure connection active
+        while(bluetoothSocket == null) { Thread.sleep(5000) }
+        val socket = bluetoothSocket!!
+
+        val buffer = ByteArray(1024)
+        var len: Int
+        while (isCommsThreadRunning){
+            try {
+                len = socket.inputStream.read(buffer)
+                val data = buffer.copyOf(len)
+                val message = data.toString(Charset.defaultCharset())
+                onScreenLog(message)
+            } catch (e: Exception) {
+                onScreenLog("An exception occurred receiving messages")
+//                try {
+//                    socket.close()
+//                } catch (ignored: Exception) { }
+//                bluetoothSocket = null
+            }
+
+            // Don't starve
+            Thread.sleep(50)
+        }
     })
 
     @SuppressLint("ClickableViewAccessibility")
@@ -87,10 +124,6 @@ class FullscreenActivity : AppCompatActivity() {
             b.setOnTouchListener { v, event -> this.moveButtonOnTouchListener(v, event) }
         }
 
-        // Start the comms thread
-        this.isCommsThreadRunning = true
-        commsReceiverThread.start()
-
         // Title bar? Not needed
         supportActionBar?.hide()
     }
@@ -107,11 +140,16 @@ class FullscreenActivity : AppCompatActivity() {
 
     private fun onScreenLog(msg : String){
         logBuffer.append(msg)
-        logBuffer.append('\n')
-        logWindow.text = logBuffer.toString()
+        if (!msg.endsWith('\n')) {
+            logBuffer.append('\n')
+        }
+
+        this.runOnUiThread { logWindow.text = logBuffer.toString() }
     }
 
     private fun setupBluetooth(){
+        if (bluetoothSocket != null) { return }
+
         onScreenLog("Starting bluetooth connection")
 
         // Check that we can use bluetooth
@@ -137,6 +175,20 @@ class FullscreenActivity : AppCompatActivity() {
         try{
             bluetoothSocket?.connect();
             onScreenLog("Connected to '$commsTargetName'")
+
+            // Send a friendly hello (informal handshake)
+            bluetoothSocket?.outputStream?.write("RTSHOLA".toByteArray())
+            val responseBuffer = ByteArray(5)
+            bluetoothSocket?.inputStream?.read(responseBuffer)
+            val response = responseBuffer.toString(Charset.defaultCharset())
+            if (response.startsWith("ACK")){
+                onScreenLog("$commsTargetName ACK'ed back")
+            }
+
+            // Start the comms thread
+            this.isCommsThreadRunning = true
+            commsReceiverThread.start()
+            commsSenderThread.start()
         }
         catch (e: Exception) {
             onScreenLog("Failed to connect '$commsTargetName")
@@ -153,9 +205,9 @@ class FullscreenActivity : AppCompatActivity() {
             MotionEvent.ACTION_DOWN -> {
                 isPressed = true
                 val button = v as Button
+                // TODO: maybe map the buttons to the messages?
                 if (button.text == "STOP"){
                     commsMsg = "RTSSTOP"
-                    isPressed = false
                 }
                 else {
                     updateMoveDirectionMessage(button.text[0])

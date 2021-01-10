@@ -108,7 +108,8 @@
             android:background="#FFFFFF"
             android:padding="5dp"
             android:text="Commands"
-            android:textColor="@color/black" />
+            android:textColor="@color/black"
+            android:textSize="10sp" />
 
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
