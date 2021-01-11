@@ -4,14 +4,18 @@ import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothSocket
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
-import android.system.Os.socket
+import android.text.method.ScrollingMovementMethod
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.widget.Button
+import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -27,6 +31,7 @@ class FullscreenActivity : AppCompatActivity() {
     private lateinit var fullscreenContent: LinearLayout
     private lateinit var fullscreenContentControls: LinearLayout
     private lateinit var logWindow: TextView
+    private lateinit var cmdInput : EditText
     private lateinit var stopButton : Button
     private lateinit var forwardButton : Button
     private lateinit var leftButton : Button
@@ -52,26 +57,27 @@ class FullscreenActivity : AppCompatActivity() {
 
         while (isCommsThreadRunning){
             if (isPressed){
+                if (commsMsg == null) { continue }
                 Log.d("RTS", "Send command '$commsMsg'")
-                // TODO: verify
+
                 try{
-                    socket.outputStream.write(commsMsg?.toByteArray())
-                    socket.outputStream.write('\r'.toInt())
-                    socket.outputStream.write('\n'.toInt())
+                    socket.outputStream.write((commsMsg?.trimEnd() + "\r\n").toByteArray())
                 }
                 catch (e : Exception){
-                    onScreenLog("An exception occurred sending messages")
+                    Log.e("RTS", "An exception occurred sending messages", e)
                 }
 
                 // TODO: do better message handling
                 // Stop is probably not the only message we want to send once...
-                if (commsMsg?.endsWith("STOP") == true){
+                if (commsMsg?.endsWith("STOP") == true
+                    || commsMsg?.endsWith("HOLA") == true){
                     isPressed = false
                 }
             }
 
-            // Don't starve
-            Thread.sleep(50)
+            // Send messages only every 100ms
+            // Also, avoid starving other threads
+            Thread.sleep(100)
         }
     })
 
@@ -85,8 +91,10 @@ class FullscreenActivity : AppCompatActivity() {
             try {
                 len = socket.inputStream.read(buffer)
                 val data = buffer.copyOf(len)
-                val message = data.toString(Charset.defaultCharset())
-                onScreenLog(message)
+                val message = data.toString(Charset.defaultCharset()).trimEnd()
+                if (message.isNotEmpty()) {
+                    onScreenLog("REPLY: $message")
+                }
             } catch (e: Exception) {
                 onScreenLog("An exception occurred receiving messages")
 //                try {
@@ -111,6 +119,7 @@ class FullscreenActivity : AppCompatActivity() {
         fullscreenContent = findViewById(R.id.fullscreen_content)
         fullscreenContentControls = findViewById(R.id.linlay_cmd)
         logWindow = findViewById(R.id.txtview_cmds)
+        cmdInput  = findViewById(R.id.input_cmd)
 
         stopButton = findViewById(R.id.btn_stp)
         forwardButton = findViewById(R.id.btn_forward)
@@ -118,11 +127,51 @@ class FullscreenActivity : AppCompatActivity() {
         rightButton = findViewById(R.id.btn_right)
         backwardsButton = findViewById(R.id.btn_rev)
 
+        val ackBtn : Button = findViewById(R.id.btn_ack)
+        ackBtn.setOnTouchListener(fun(v: View, event: MotionEvent): Boolean {
+            if (event.action == MotionEvent.ACTION_DOWN) {
+                this.commsMsg = "RTSHOLA"
+                isPressed = true
+                onScreenLog("SEND: ${this.commsMsg}")
+            }
+
+            return v?.onTouchEvent(event) ?: true
+        })
+
+        cmdInput.setOnEditorActionListener(fun(v, actionId, event): Boolean{
+            if (actionId != EditorInfo.IME_ACTION_DONE){
+                return false
+            }
+
+            // get the text, clear it and send it
+            var cmd = cmdInput.text.toString()
+            val isSend =  cmd.startsWith("SEND: ")
+            if(isSend) { cmd = cmd.removePrefix("SEND: ") }
+
+            var type = ""
+            if (cmd.startsWith(commsHeader) || isSend){
+                isPressed = false
+                bluetoothSocket?.outputStream?.write((cmd.trimEnd() + "\r\n").toByteArray())
+                commsMsg = null
+                type = "SEND: "
+            }
+
+            onScreenLog(type + cmd)
+            cmdInput.text.clear()
+
+            val imm: InputMethodManager = applicationContext.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.hideSoftInputFromWindow(v.windowToken, 0)
+
+            return true
+        })
+
         // setup callbacks
         val buttons = arrayOf(stopButton, forwardButton, leftButton, rightButton, backwardsButton)
         for (b in buttons){
             b.setOnTouchListener { v, event -> this.moveButtonOnTouchListener(v, event) }
         }
+
+        logWindow.movementMethod = ScrollingMovementMethod()
 
         // Title bar? Not needed
         supportActionBar?.hide()
@@ -130,6 +179,7 @@ class FullscreenActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
+        // Should be a background thread
         commsInitHandler.postDelayed(Runnable { this.setupBluetooth() }, 3000)
         onScreenLog("System started")
     }
@@ -139,12 +189,20 @@ class FullscreenActivity : AppCompatActivity() {
     }
 
     private fun onScreenLog(msg : String){
-        logBuffer.append(msg)
-        if (!msg.endsWith('\n')) {
+        val trimmed = msg.trimEnd()
+        if (trimmed.isEmpty()){ return }
+
+        logBuffer.append(trimmed)
+        if ( !trimmed.endsWith('\n')
+            || !trimmed.endsWith('\r')) {
             logBuffer.append('\n')
         }
 
-        this.runOnUiThread { logWindow.text = logBuffer.toString() }
+        this.runOnUiThread(fun() {
+            logWindow.text = logBuffer.toString()
+            //val scrollAmount = logWindow.layout.getLineTop(logWindow.lineCount) - logWindow.height
+            //logWindow.scrollTo(0, scrollAmount)
+        })
     }
 
     private fun setupBluetooth(){
@@ -178,6 +236,10 @@ class FullscreenActivity : AppCompatActivity() {
 
             // Send a friendly hello (informal handshake)
             bluetoothSocket?.outputStream?.write("RTSHOLA".toByteArray())
+            bluetoothSocket?.outputStream?.write('\r'.toInt())
+            bluetoothSocket?.outputStream?.write('\n'.toInt())
+
+            // Get a reply
             val responseBuffer = ByteArray(5)
             bluetoothSocket?.inputStream?.read(responseBuffer)
             val response = responseBuffer.toString(Charset.defaultCharset())
