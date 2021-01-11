@@ -18,6 +18,8 @@ enum RTSMove{
     RIGHT = 'R'
 };
 
+void MotorSetup();
+
 // Called on the ESP32 timer for motor update
 void MotorUpdate();
 
