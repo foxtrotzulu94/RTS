@@ -46,38 +46,11 @@ void HandleMessage(const char* cmd)
     // Single char message testing
     switch (cmd[0])
     {
-    case 'S':
-        ledcWrite(RIGHT_MOTOR_CH1, 0);
-        ledcWrite(RIGHT_MOTOR_CH2, 0);
-        ledcWrite(LEFT_MOTOR_CH1, 0);
-        ledcWrite(LEFT_MOTOR_CH2, 0);
-        break;
-
     case 'O':
         ledcWrite(RIGHT_MOTOR_CH1, 255);
         ledcWrite(RIGHT_MOTOR_CH2, 255);
         ledcWrite(LEFT_MOTOR_CH1, 255);
         ledcWrite(LEFT_MOTOR_CH2, 255);
-        break;
-
-    case 'T':
-        SerialBT.println("Testing underway");
-        ledcWrite(RIGHT_MOTOR_CH1, 0);
-        ledcWrite(RIGHT_MOTOR_CH2, 0);
-        ledcWrite(LEFT_MOTOR_CH1, 0);
-        ledcWrite(LEFT_MOTOR_CH2, 0);
-
-        for (int i = 0; i <= 255; ++i)
-        {
-            SerialBT.printf("Duty = %i\n", (100 * i) / 255);
-            ledcWrite(RIGHT_MOTOR_CH2, i);
-            ledcWrite(LEFT_MOTOR_CH2, i);
-            delay(50);
-        }
-        SerialBT.println("TEST complete");
-        ledcWrite(LEFT_MOTOR_CH2, 0);
-        ledcWrite(RIGHT_MOTOR_CH2, 0);
-
         break;
 
     case 'W':
