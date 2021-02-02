@@ -2,11 +2,13 @@
 
 An ESP32-based Toy Tank controlled over Serial Bluetooth
 
----> **This repo is still a work-in-progress** <---
+---> **This repo is still a work-in-progress - Most of it is Hackathon code** <---
 
 ## Overview
 
-This repo contains all the major subsystems of the project, detailed below
+This repo contains all the major subsystems of the project, detailed below.
+
+The "RTS" acronym comes from "Remote Toy Sherman". It's also just a pretty cool project acronym :)
 
 ## Mechanical
 
