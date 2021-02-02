@@ -46,11 +46,11 @@ void MotorDriveUpdate(){
     // TODO: Full piecewise -255 to 0 then 0 to 255. Lerp does not have continuity
     const bool isLeftForward = MotorState.isLeftForward();
     const int leftMax = isLeftForward? MotorMaxDuty : -MotorMaxDuty;
-    MotorState.Left = lerp(MotorState.Left, leftMax);
+    MotorState.Left = lerp(MotorState.Left, leftMax, MotorDutyStepPercent);
 
     const bool isRightForward = MotorState.isRightForward();
     const int rightMax = isRightForward? MotorMaxDuty : -MotorMaxDuty;
-    MotorState.Right = lerp(MotorState.Right, rightMax);
+    MotorState.Right = lerp(MotorState.Right, rightMax, MotorDutyStepPercent);
 
     // Execute engine update
     // CH1 channel is backwards, and CH2 is forward
